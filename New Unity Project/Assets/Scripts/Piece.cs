@@ -1,34 +1,54 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Piece : MonoBehaviour
 {
     Block[] blocks;
-    Vector2Int[] blockPoints;
+    public Vector2Int[] blockPoints;
     int[,] blockArray;
-    int rotateCount;
     PieceType type;
     public PieceType Type { get { return type; } }
     bool isGrounded;
-    public bool IsGrounded {  get { return isGrounded; } }
+    public bool IsGrounded { get { return isGrounded; } }
+    int rotateCount;
 
     void Awake()
     {
         blocks = transform.GetComponentsInChildren<Block>();
         blockPoints = new Vector2Int[4];
-        rotateCount = 0;
         isGrounded = false;
+        rotateCount = 0;
     }
     void OnTriggerEnter(Collider collider)
     {
         isGrounded = true;
     }
-    public void InitBlockPoints(MapManager mapManager)
+    public bool CanMove(int xDir, MapManager mapManager)
     {
-        for(int i=0; i<4; i++)
+        for (int i = 0; i < blocks.Length; i++)
+        {
+            Vector2Int point = blockPoints[i] + new Vector2Int(xDir, 0);
+            if (point.x < 0 || point.x >= MapManager.width || mapManager.ValueAt(point) == 1)
+                return false;
+        }
+        return true;
+    }
+
+    public void Move(int xDir)
+    {
+        transform.position += new Vector3(xDir, 0, 0) * Block.size;
+        for (int i = 0; i < blocks.Length; i++)
+            blockPoints[i].x += xDir;
+    }
+
+    public void UpdatePoints(MapManager mapManager)
+    {
+        for (int i = 0; i < blocks.Length; i++)
             blockPoints[i] = mapManager.PosToPoint(blocks[i].transform.position);
     }
+
     public void Rotate(bool clockwise)
     {
         if (clockwise)
@@ -37,24 +57,17 @@ public class Piece : MonoBehaviour
             rotateCount -= 1;
         rotateCount = (rotateCount + 4) % 4;
         transform.rotation = Quaternion.Euler(0, 0, rotateCount * -90);
+    }
 
-        int[,] originalArray = blockArray;
-        int length = blockArray.GetLength(0);
-        for (int y = 0; y < length; y++)
-        {
-            for (int x = 0; x < length; x++)
-            {
-                if (clockwise)
-                    blockArray[x, length - y - 1] = originalArray[y, x];
-                else
-                    blockArray[length - x - 1, y] = originalArray[y, x];
-            }
-        }
-    }
-    public void Move(int xDir)
+    public void ReturnBlocks(MapManager mapManager)
     {
-        transform.position += new Vector3(xDir, 0, 0) * Block.size;
+        for (int i = 0; i < blocks.Length; i++)
+        {
+            mapManager.AddBlock(blocks[i],blockPoints[i]);
+        }
+        Destroy(gameObject);
     }
+
     public int[,] GetInitialArray(PieceType type)
     {
         int[,] blockArray;
