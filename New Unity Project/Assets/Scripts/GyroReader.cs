@@ -46,7 +46,6 @@ public class GyroReader : MonoBehaviour
     {
 
         string[] s = message.Substring(1).Split('/');
-        //Vector3 inputVector = new Vector3(-float.Parse(s[2]), float.Parse(s[0]), float.Parse(s[1]));
         Vector3 inputVector = new Vector3(-float.Parse(s[2]), float.Parse(s[0]), float.Parse(s[1]));
 
         if (firstTimeReading)
@@ -56,13 +55,9 @@ public class GyroReader : MonoBehaviour
             firstTimeReading = false;
             error = Vector3.zero;
         }
-        else
-        {
-            Debug.Log(Mathf.Abs(inputVector.y - lastInput.y));
-            if (Mathf.Abs(inputVector.y - lastInput.y) <= 0.1f)
-                error.y += inputVector.y - lastInput.y;
-            hand.FeedVector(inputVector - offset - error);
-            lastInput = inputVector;
-        }
+        if (Mathf.Abs(inputVector.y - lastInput.y) <= 0.1f)
+            error.y += inputVector.y - lastInput.y;
+        hand.FeedVector(inputVector - offset - error);
+        lastInput = inputVector;
     }
 }
