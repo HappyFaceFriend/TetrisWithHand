@@ -56,7 +56,34 @@ public class Piece : MonoBehaviour
         else
             rotateCount -= 1;
         rotateCount = (rotateCount + 4) % 4;
-        transform.rotation = Quaternion.Euler(0, 0, rotateCount * -90);
+        if(type == PieceType.I || type == PieceType.O)
+        {
+            Vector2Int posOffset = new Vector2Int(0,0);
+            if (clockwise)
+            {
+                if (rotateCount == 0)
+                    posOffset.y += 1;
+                else if (rotateCount == 1)
+                    posOffset.x += 1;
+                else if (rotateCount == 2)
+                    posOffset.y -= 1;
+                else
+                    posOffset.x -= 1;
+            }
+            else
+            {
+                if (rotateCount == 0)
+                    posOffset.x -= 1;
+                else if (rotateCount == 1)
+                    posOffset.y += 1;
+                else if (rotateCount == 2)
+                    posOffset.x += 1;
+                else
+                    posOffset.y -= 1;
+            }
+            transform.position += new Vector3(posOffset.x,posOffset.y,0) * Block.size;
+        }
+        transform.rotation = Quaternion.Euler(0, 0, rotateCount * -90); 
     }
 
     public void ReturnBlocks(MapManager mapManager)
@@ -74,7 +101,7 @@ public class Piece : MonoBehaviour
         switch (type)
         {
             case PieceType.I:
-                blockArray = new int[4, 4] { { 0, 0, 0, 0 }, { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
+                blockArray = new int[5, 5] { { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 }, { 0, 1, 1, 1, 1 }, { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 } };
                 break;
             case PieceType.T:
                 blockArray = new int[3, 3] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 0, 0 } };
@@ -93,7 +120,7 @@ public class Piece : MonoBehaviour
                 break;
             case PieceType.O:
             default:
-                blockArray = new int[2, 2] { { 1, 1 }, { 1, 1 } };
+                blockArray = new int[3, 3] { { 0, 1, 1 }, { 0, 1, 1 }, { 0, 0, 0 } };
                 break;
         }
         return blockArray;

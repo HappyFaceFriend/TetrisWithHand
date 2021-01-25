@@ -54,8 +54,8 @@ public class PieceController : MonoBehaviour
         GameObject t = Instantiate(piecePrefabs[nextPiece], spawnPosition, Quaternion.identity,transform);
         currentPiece = t.GetComponent<Piece>();
         currentPiece.UpdatePoints(mapManager);
-        if (nextPiece == (int)PieceType.I || nextPiece == (int)PieceType.O)
-            t.transform.position += new Vector3(-0.5f, 0.5f, 0) * Block.size;
+        //if (nextPiece == (int)PieceType.I || nextPiece == (int)PieceType.O)
+        //    t.transform.position += new Vector3(-0.5f, 0.5f, 0) * Block.size;
         nextPiece = (nextPiece + 1) % 7;
         rotateCount = 0;
     }
