@@ -793,7 +793,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnPoint: {x: 5, y: 18}
-  dropSpeed: 0
+  dropSpeed: 1
   piecePrefabs:
   - {fileID: 8487525030736946483, guid: c4d957d9662b19a4eb9d7960beeb70c6, type: 3}
   - {fileID: 4134567856778784805, guid: e282e11a9256b774d80bc8393569819a, type: 3}

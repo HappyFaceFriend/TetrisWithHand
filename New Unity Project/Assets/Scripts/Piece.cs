@@ -6,7 +6,7 @@ using UnityEngine;
 public class Piece : MonoBehaviour
 {
     Block[] blocks;
-    public Vector2Int[] blockPoints;
+    public Vector2Int point;
     int[,] blockArray;
     PieceType type;
     public PieceType Type { get { return type; } }
@@ -14,12 +14,17 @@ public class Piece : MonoBehaviour
     public bool IsGrounded { get { return isGrounded; } }
     int rotateCount;
 
+    
     void Awake()
     {
         blocks = transform.GetComponentsInChildren<Block>();
-        blockPoints = new Vector2Int[4];
         isGrounded = false;
         rotateCount = 0;
+    }
+    public void Init(PieceType type)
+    {
+        this.type = type;
+        blockArray = GetInitialArray(type);
     }
     void OnTriggerEnter(Collider collider)
     {
@@ -27,11 +32,19 @@ public class Piece : MonoBehaviour
     }
     public bool CanMove(int xDir, MapManager mapManager)
     {
-        for (int i = 0; i < blocks.Length; i++)
+        int length = blockArray.GetLength(0);
+        for (int i = 0; i < length; i++)
         {
-            Vector2Int point = blockPoints[i] + new Vector2Int(xDir, 0);
-            if (point.x < 0 || point.x >= MapManager.width || mapManager.ValueAt(point) == 1)
-                return false;
+            for (int j = 0; j < length; j++)
+            {
+                if (blockArray[j, i] == 0)
+                    continue;
+                Vector2Int p = point + new Vector2Int(-length/2 + i,-(-length/2 + j)) + new Vector2Int(xDir, 0);
+                if (!mapManager.IsInsideMap(p))
+                    return false;
+                if (mapManager.ValueAt(p) == 1)
+                    return false;
+            }
         }
         return true;
     }
@@ -39,90 +52,159 @@ public class Piece : MonoBehaviour
     public void Move(int xDir)
     {
         transform.position += new Vector3(xDir, 0, 0) * Block.size;
-        for (int i = 0; i < blocks.Length; i++)
-            blockPoints[i].x += xDir;
+        point.x += xDir;
     }
 
-    public void UpdatePoints(MapManager mapManager)
+    //Returns null if it can't rotate
+    public KeyValuePair<bool, Vector2Int> GetRotationOffset(bool clockwise, MapManager mapManager)
     {
-        for (int i = 0; i < blocks.Length; i++)
-            blockPoints[i] = mapManager.PosToPoint(blocks[i].transform.position);
+        Vector2Int[,] offsetTable = GetOffsetTable(type);
+        int c = clockwise ? 1 : -1;
+        for (int i=0; i<offsetTable.GetLength(1);i++)
+        {
+            Vector2Int offset = offsetTable[rotateCount, i] - offsetTable[(rotateCount + c + 4)%4, i];
+            if (CheckRotation(clockwise, offset, mapManager))
+            {
+                return new KeyValuePair<bool, Vector2Int>(true, offset);
+            }
+        }
+        return new KeyValuePair<bool, Vector2Int>(false, new Vector2Int());
     }
 
-    public void Rotate(bool clockwise)
+    public void SetPoint(Vector2Int vector2Int)
+    {
+        point = vector2Int;
+    }
+
+    public void Rotate(bool clockwise, Vector2Int offset)
     {
         if (clockwise)
             rotateCount += 1;
         else
             rotateCount -= 1;
         rotateCount = (rotateCount + 4) % 4;
-        if(type == PieceType.I || type == PieceType.O)
-        {
-            Vector2Int posOffset = new Vector2Int(0,0);
-            if (clockwise)
-            {
-                if (rotateCount == 0)
-                    posOffset.y += 1;
-                else if (rotateCount == 1)
-                    posOffset.x += 1;
-                else if (rotateCount == 2)
-                    posOffset.y -= 1;
-                else
-                    posOffset.x -= 1;
-            }
-            else
-            {
-                if (rotateCount == 0)
-                    posOffset.x -= 1;
-                else if (rotateCount == 1)
-                    posOffset.y += 1;
-                else if (rotateCount == 2)
-                    posOffset.x += 1;
-                else
-                    posOffset.y -= 1;
-            }
-            transform.position += new Vector3(posOffset.x,posOffset.y,0) * Block.size;
-        }
-        transform.rotation = Quaternion.Euler(0, 0, rotateCount * -90); 
+        transform.rotation = Quaternion.Euler(0, 0, rotateCount * -90);
+        blockArray = GetRotatedArray(clockwise);
+        transform.position += new Vector3(offset.x, offset.y, 0) * Block.size;
+        point += offset;
     }
 
     public void ReturnBlocks(MapManager mapManager)
     {
-        for (int i = 0; i < blocks.Length; i++)
+        int length = blockArray.GetLength(0);
+        int c = 0;
+        for (int i = 0; i < length; i++)
         {
-            mapManager.AddBlock(blocks[i],blockPoints[i]);
+            for (int j = 0; j < length; j++)
+            {
+                if (blockArray[j,i] == 0)
+                    continue;
+                Vector2Int p = point + new Vector2Int(-length / 2 + i, -(-length / 2 + j));
+                mapManager.AddBlock(blocks[c++], p);
+                Debug.Log(p);
+            }
         }
         Destroy(gameObject);
     }
 
     public int[,] GetInitialArray(PieceType type)
     {
-        int[,] blockArray;
+        int[,] tempArray;
         switch (type)
         {
             case PieceType.I:
-                blockArray = new int[5, 5] { { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 }, { 0, 1, 1, 1, 1 }, { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 } };
+                tempArray = new int[5, 5] { { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 }, { 0, 1, 1, 1, 1 }, { 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0 } };
                 break;
             case PieceType.T:
-                blockArray = new int[3, 3] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 0, 0 } };
+                tempArray = new int[3, 3] { { 0, 1, 0 }, { 1, 1, 1 }, { 0, 0, 0 } };
                 break;
             case PieceType.J:
-                blockArray = new int[3, 3] { { 1, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0 } };
+                tempArray = new int[3, 3] { { 1, 0, 0 }, { 1, 1, 1 }, { 0, 0, 0 } };
                 break;
             case PieceType.L:
-                blockArray = new int[3, 3] { { 0, 0, 1 }, { 1, 1, 1 }, { 0, 0, 0 } };
+                tempArray = new int[3, 3] { { 0, 0, 1 }, { 1, 1, 1 }, { 0, 0, 0 } };
                 break;
             case PieceType.S:
-                blockArray = new int[3, 3] { { 0, 1, 1 }, { 1, 1, 0 }, { 0, 0, 0 }};
+                tempArray = new int[3, 3] { { 0, 1, 1 }, { 1, 1, 0 }, { 0, 0, 0 }};
                 break;
             case PieceType.Z:
-                blockArray = new int[3, 3] { { 1, 1, 0 }, { 0, 1, 1 }, { 0, 0, 0 } };
+                tempArray = new int[3, 3] { { 1, 1, 0 }, { 0, 1, 1 }, { 0, 0, 0 } };
                 break;
             case PieceType.O:
             default:
-                blockArray = new int[3, 3] { { 0, 1, 1 }, { 0, 1, 1 }, { 0, 0, 0 } };
+                tempArray = new int[3, 3] { { 0, 1, 1 }, { 0, 1, 1 }, { 0, 0, 0 } };
                 break;
         }
-        return blockArray;
+        return tempArray;
+    }
+    bool CheckRotation(bool clockwise, Vector2Int offset, MapManager mapManager)
+    {
+        int [,]tempArray = GetRotatedArray(clockwise);
+        int length = tempArray.GetLength(0);
+        for(int i=0; i<length; i++)
+        {
+            for(int j=0; j<length; j++)
+            {
+                if (tempArray[j, i] == 1)
+                {
+                    Vector2Int t = new Vector2Int(point.x -length/2 + i + offset.x, point.y +length/2- j + offset.y);
+                    if (!mapManager.IsInsideMap(t))
+                        return false;
+                    if(mapManager.ValueAt(t) == 1)
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+    public int[,] GetRotatedArray(bool clockwise)
+    {
+        int[,] result = (int[,])blockArray.Clone();
+        int length = blockArray.GetLength(0);
+        for (int i = 0; i < length; i++)
+        {
+            for (int j = 0; j < length; j++)
+            {
+                if (clockwise)
+                    result[i, length - j - 1] = blockArray[j, i];
+                else
+                    result[length - 1 - i, j] = blockArray[j, i];
+            }
+        }
+        return result;
+    }
+
+    public Vector2Int[,] GetOffsetTable(PieceType type)
+    {
+        if (type == PieceType.I)
+        {
+            return new Vector2Int[4, 5]
+            {
+                { new Vector2Int(0,0), new Vector2Int(-1,0), new Vector2Int(+2,0), new Vector2Int(-1,0), new Vector2Int(+2,0) },
+                { new Vector2Int(-1,0), new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,+1), new Vector2Int(0,-2) },
+                { new Vector2Int(-1,+1), new Vector2Int(+1,+1), new Vector2Int(-2,+1), new Vector2Int(+1,0), new Vector2Int(-2,0) },
+                { new Vector2Int(0,+1), new Vector2Int(0,+1), new Vector2Int(0,+1), new Vector2Int(0,-1), new Vector2Int(0,+2) }
+            };
+        }
+        else if (type == PieceType.O)
+        {
+            return new Vector2Int[4,1]
+            {
+                { new Vector2Int(0,0) },
+                { new Vector2Int(0,-1) },
+                { new Vector2Int(-1,-1) },
+                { new Vector2Int(-1,0) }
+            };
+        }
+        else
+        {
+            return new Vector2Int[4, 5]
+            {
+                { new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0) },
+                { new Vector2Int(0,0), new Vector2Int(+1,0), new Vector2Int(+1,-1), new Vector2Int(0,+2), new Vector2Int(+1,+2) },
+                { new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0), new Vector2Int(0,0) },
+                { new Vector2Int(0,0), new Vector2Int(-1,0), new Vector2Int(-1,-1), new Vector2Int(0,+2), new Vector2Int(-1,+2) }
+            };
+        }
     }
 }

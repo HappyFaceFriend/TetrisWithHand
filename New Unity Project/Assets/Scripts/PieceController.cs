@@ -23,11 +23,15 @@ public class PieceController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.X))
         {
-            currentPiece.Rotate(true);
+            var val = currentPiece.GetRotationOffset(true, mapManager);
+            if(val.Key)
+                currentPiece.Rotate(true, val.Value);
         }
         else if (Input.GetKeyDown(KeyCode.Z))
         {
-            currentPiece.Rotate(false);
+            var val = currentPiece.GetRotationOffset(false, mapManager);
+            if (val.Key)
+                currentPiece.Rotate(false, val.Value);
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
@@ -45,17 +49,17 @@ public class PieceController : MonoBehaviour
             CreatePiece();
         }
         else
+        {
             currentPiece.transform.position += new Vector3(0, -1, 0) * dropSpeed * Time.deltaTime;
-        currentPiece.UpdatePoints(mapManager);
+            currentPiece.SetPoint(mapManager.PosToPoint(currentPiece.transform.position));
+        }
     }
     public void CreatePiece()
     {
-        Vector3 spawnPosition = mapManager.PosOf(spawnPoint.x, spawnPoint.y);   //spawnPoint : blockarray[1][1]
+        Vector3 spawnPosition = mapManager.PosOf(spawnPoint.x, spawnPoint.y);
         GameObject t = Instantiate(piecePrefabs[nextPiece], spawnPosition, Quaternion.identity,transform);
         currentPiece = t.GetComponent<Piece>();
-        currentPiece.UpdatePoints(mapManager);
-        //if (nextPiece == (int)PieceType.I || nextPiece == (int)PieceType.O)
-        //    t.transform.position += new Vector3(-0.5f, 0.5f, 0) * Block.size;
+        currentPiece.Init((PieceType)nextPiece);
         nextPiece = (nextPiece + 1) % 7;
         rotateCount = 0;
     }

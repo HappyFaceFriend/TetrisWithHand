@@ -45,6 +45,12 @@ public class MapManager : MonoBehaviour
         Vector3 point = (position - transform.position) / Block.size;
         return new Vector2Int(Mathf.RoundToInt(point.x), Mathf.CeilToInt(point.y));
     }
+    public bool IsInsideMap(Vector2Int point)
+    {
+        if (point.x >= 0 && point.x <= width-1 && point.y >= 0 && point.y <= height)
+            return true;
+        return false;
+    }
     public void AddBlock(Block block, Vector2Int point)
     {
         blockMap[point.y, point.x] = block;
