@@ -10,21 +10,25 @@ public class PieceController : MonoBehaviour
     public GameObject[] piecePrefabs;
     public MapManager mapManager;
     public int nextPiece = 1;
+    public float groundStopTime = 0.5f;
     int rotateCount;
-
+    Timer groundTimer;
+    private void Awake()
+    {
+        groundTimer = new Timer(groundStopTime);
+    }
     // Start is called before the first frame update
     void Start()
     {
-        CreatePiece();
+        //CreatePiece();
     }
-
     // Update is called once per frame
-    void Update()
+    public void UpdateFrame()
     {
-        if (Input.GetKeyDown(KeyCode.X))
+        if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.UpArrow))
         {
             var val = currentPiece.GetRotationOffset(true, mapManager);
-            if(val.Key)
+            if (val.Key)
                 currentPiece.Rotate(true, val.Value);
         }
         else if (Input.GetKeyDown(KeyCode.Z))
@@ -35,7 +39,7 @@ public class PieceController : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            if(currentPiece.CanMove(-1, mapManager))
+            if (currentPiece.CanMove(-1, mapManager))
                 currentPiece.Move(-1);
         }
         else if (Input.GetKeyDown(KeyCode.RightArrow))
@@ -45,14 +49,37 @@ public class PieceController : MonoBehaviour
         }
         if (currentPiece.IsGrounded)
         {
-            currentPiece.ReturnBlocks(mapManager);
-            CreatePiece();
+            if(!groundTimer.isOn)
+                groundTimer.Start();
+            else if(!groundTimer.Check())
+            {
+                groundTimer.Update();
+            }
+            else
+            {
+                groundTimer.Reset();
+                FinishPiece();
+            }
+        }
+        else if (Input.GetKeyDown(KeyCode.Space))
+        {
+            currentPiece.HardDrop(mapManager);
+            FinishPiece();
         }
         else
         {
-            currentPiece.transform.position += new Vector3(0, -1, 0) * dropSpeed * Time.deltaTime;
+            groundTimer.Reset();
+            if (Input.GetKey(KeyCode.DownArrow))
+                currentPiece.transform.position += new Vector3(0, -3, 0) * dropSpeed * Time.deltaTime;
+            else
+                currentPiece.transform.position += new Vector3(0, -1, 0) * dropSpeed * Time.deltaTime;
             currentPiece.SetPoint(mapManager.PosToPoint(currentPiece.transform.position));
         }
+    }
+    public void FinishPiece()
+    {
+        currentPiece.ReturnBlocks(mapManager);
+        CreatePiece();
     }
     public void CreatePiece()
     {

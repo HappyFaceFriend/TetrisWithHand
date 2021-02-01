@@ -14,7 +14,7 @@ public class Piece : MonoBehaviour
     public bool IsGrounded { get { return isGrounded; } }
     int rotateCount;
 
-    
+
     void Awake()
     {
         blocks = transform.GetComponentsInChildren<Block>();
@@ -29,6 +29,35 @@ public class Piece : MonoBehaviour
     void OnTriggerEnter(Collider collider)
     {
         isGrounded = true;
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        isGrounded = false;
+    }
+    public void HardDrop(MapManager mapManager)
+    {
+        int length = blockArray.GetLength(0);
+        int y = 0;
+        bool isAtGround = false;
+        while(!isAtGround)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    if (blockArray[j, i] == 0)
+                        continue;
+                    Vector2Int p = point + new Vector2Int(-length / 2 + i, -(-length / 2 + j)) - new Vector2Int(0, y+1);
+                    if (!mapManager.IsInsideMap(p))
+                        isAtGround = true;
+                    else if (mapManager.ValueAt(p) == 1)
+                        isAtGround = true;
+                }
+            }
+            y++;
+        }
+        point.y -= y - 1;
+        transform.position = mapManager.PosOf(point);
     }
     public bool CanMove(int xDir, MapManager mapManager)
     {

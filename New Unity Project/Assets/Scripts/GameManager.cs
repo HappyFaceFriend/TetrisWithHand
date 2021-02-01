@@ -7,13 +7,21 @@ public class GameManager : MonoBehaviour
     public PieceController pieceController;
     public MapManager mapManager;
 
+    Coroutine gameCoroutine;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        gameCoroutine = StartCoroutine(GameCoroutine());
     }
-    // Update is called once per frame
-    void Update()
+
+    IEnumerator GameCoroutine()
     {
+        pieceController.CreatePiece();
+        while(true)
+        {
+            pieceController.UpdateFrame();
+            yield return null;
+        }
     }
 }
